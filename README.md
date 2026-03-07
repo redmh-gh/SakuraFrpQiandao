@@ -185,7 +185,7 @@ SakuraFrp-Qiandao/
 
 ### 定时任务时间
 
-修改 `.github/workflows/checkin.yml` 中的 cron 表达式：
+修改 `.github/workflows/sakurafrp_sign.yml` 中的 cron 表达式：
 
 ```yaml
 schedule:
