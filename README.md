@@ -51,11 +51,22 @@ CHROME_BINARY_PATH=
 
 # 运行模式（可选）
 HEADLESS=false
+
+# 是否将验证码图片转换为 base64（可选）
+# 可接受：true/false, 1/0, yes/no, on/off
+# 注意：通过第三方适配器接入的服务（例如 copilot-api 或 LiteLLM）不支持直接使用图片 URL。
+# 为确保兼容性，必须将验证码图片转换为 base64 后再发送。
+IMAGE_AS_BASE64=false
 ```
 
 ### 3. 下载 ChromeDriver
 
-从 [ChromeDriver 官网](https://chromedriver.chromium.org/) 下载对应版本的 `chromedriver.exe`，放在项目根目录。
+从 [ChromeDriver 官网](https://chromedriver.chromium.org/) 下载对应版本的 ChromeDriver。
+
+- Windows: `chromedriver.exe`
+- Linux/macOS: `chromedriver`
+
+可将驱动放在项目根目录，或加入系统 `PATH`。
 
 ### 4. 运行脚本
 
@@ -204,6 +215,7 @@ schedule:
 - **OpenAI**: `gpt-4o`, `gpt-4-vision-preview`
 - **阿里通义**: `qwen-vl-plus`, `qwen-vl-max`
 - **智谱 AI**: `glm-4v`
+- **GitHub Copilot**: `gpt-4o` — 可通过第三方适配层接入 OpenAI 兼容接口（例如 [copilot-api](https://github.com/caozhiyuan/copilot-api) 将 Copilot 请求转为 OpenAI API，或使用 [LiteLLM](https://github.com/BerriAI/litellm) 作为轻量/本地模型适配方案）。根据部署与隐私需求选择合适方案。
 - **ModelScope**: 各种开源视觉模型
 
 ## 故障排查
@@ -270,3 +282,5 @@ MIT License
 - [SakuraFrp 官网](https://www.natfrp.com/)
 - [Selenium 文档](https://www.selenium.dev/documentation/)
 - [GitHub Actions 文档](https://docs.github.com/en/actions)
+- [copilot-api — caozhiyuan/copilot-api](https://github.com/caozhiyuan/copilot-api)
+- [LiteLLM — BerriAI/litellm](https://github.com/BerriAI/litellm)

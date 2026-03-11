@@ -1,3 +1,11 @@
+checkin.log
+chromedriver.exe
+.env
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+node_modules/
 .env
 .venv
 checkin.log

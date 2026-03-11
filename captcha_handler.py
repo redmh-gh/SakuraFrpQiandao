@@ -61,8 +61,8 @@ class CaptchaHandler:
                 time.sleep(2)
                 return False
             
-            # 调用视觉模型识别
-            recognition_result = self._recognize_captcha(img_url)
+            # 调用视觉模型识别，imagebase64 由配置控制
+            recognition_result = self._recognize_captcha(img_url, imagebase64=self.config.image_as_base64)
             if not recognition_result:
                 logger.warning("识别失败，刷新网页重试...")
                 time.sleep(2)
@@ -84,41 +84,76 @@ class CaptchaHandler:
             return False
 
     
-    def _recognize_captcha(self, img_url: str) -> Optional[Dict]:
-        """使用视觉模型识别验证码"""
+    def _recognize_captcha(self, img_url: str, imagebase64: bool = False) -> Optional[Dict]:
+        """使用视觉模型识别验证码，支持 imagebase64 方式"""
         try:
             prompt = (
                 '这是一个九宫格验证码，请按从左到右、从上到下的顺序识别每个格子里的物品名称，'
                 '最后识别左下角的参考图。输出格式为JSON：{"1":"名称", "2":"名称", ..., "10":"参考图名称"}。'
                 '名称要简洁，参考图名称必须是九宫格里已有的名称。若有类似物品（如气球与热气球），请统一名称。'
             )
-            
+            image_url_value = img_url
+            if imagebase64:
+                import requests, base64
+                try:
+                    resp = requests.get(img_url)
+                    resp.raise_for_status()
+                    img_bytes = resp.content
+                    img_b64 = base64.b64encode(img_bytes).decode('utf-8')
+                    image_url_value = f"data:image/jpeg;base64,{img_b64}"
+                except Exception as e:
+                    logger.error(f"图片转base64失败: {e}")
+                    return None
             response = self.client.chat.completions.create(
                 model=self.config.model,
                 messages=[{
                     'role': 'user',
                     'content': [
                         {'type': 'text', 'text': prompt},
-                        {'type': 'image_url', 'image_url': {'url': img_url}}
+                        {'type': 'image_url', 'image_url': {'url': image_url_value}}
                     ]
                 }],
                 stream=False
             )
-            
             result_content = response.choices[0].message.content
             logger.info(f"模型原始输出: {result_content}")
-            
-            # 清理并解析 JSON
-            cleaned_str = result_content.replace("'", '"')
-            # 尝试提取 JSON 内容（处理可能包含其他文本的情况）
-            json_match = json.loads(cleaned_str) if cleaned_str.startswith('{') else None
-            
-            if not json_match:
+
+            def _extract_json(text: str) -> Optional[str]:
+                # 优先查找 ```json ``` 包裹的代码块
+                m = re.search(r'```json\s*(\{.*?\})\s*```', text, flags=re.DOTALL)
+                if m:
+                    return m.group(1)
+
+                # 否则查找第一个 { 并匹配到对应的闭合 }
+                start = text.find('{')
+                if start == -1:
+                    return None
+                stack = 0
+                for i in range(start, len(text)):
+                    if text[i] == '{':
+                        stack += 1
+                    elif text[i] == '}':
+                        stack -= 1
+                        if stack == 0:
+                            return text[start:i+1]
+                return None
+
+            json_text = _extract_json(result_content if isinstance(result_content, str) else str(result_content))
+            if not json_text:
                 logger.error("无法从模型输出中提取有效 JSON")
                 return None
-            
-            return json_match
-            
+
+            # 尝试解析原始 JSON 文本
+            try:
+                return json.loads(json_text)
+            except json.JSONDecodeError:
+                # 如果解析失败，尝试把单引号换成双引号后再解析（容错）
+                try:
+                    cleaned = json_text.replace("'", '"')
+                    return json.loads(cleaned)
+                except Exception as e:
+                    logger.error(f"JSON 解析失败: {e}")
+                    return None
         except json.JSONDecodeError as e:
             logger.error(f"JSON 解析失败: {e}")
             return None
