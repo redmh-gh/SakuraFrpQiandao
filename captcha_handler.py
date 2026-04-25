@@ -104,24 +104,30 @@ class CaptchaHandler:
                 }],
                 stream=False
             )
-            
+        
             result_content = response.choices[0].message.content
             logger.info(f"模型原始输出: {result_content}")
-            
-            # 清理并解析 JSON
-            cleaned_str = result_content.replace("'", '"')
-            # 尝试提取 JSON 内容（处理可能包含其他文本的情况）
-            json_match = json.loads(cleaned_str) if cleaned_str.startswith('{') else None
-            
-            if not json_match:
-                logger.error("无法从模型输出中提取有效 JSON")
+        
+            # 提取被 <|begin_of_box|> 和 <|end_of_box|> 包裹的 JSON 字符串
+            pattern = r'<\|begin_of_box\|>(.*?)<\|end_of_box\|>'
+            match = re.search(pattern, result_content, re.DOTALL)
+            if match:
+                json_str = match.group(1).strip()
+            else:
+                # 如果没有标记，则直接使用原始内容（兼容旧格式）
+                json_str = result_content.strip()
+        
+            # 清理字符串（替换单引号、去除多余空白）
+            cleaned_str = json_str.replace("'", '"').strip()
+        
+            # 解析 JSON
+            try:
+                result_dict = json.loads(cleaned_str)
+                return result_dict
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON 解析失败: {e}\n原始内容: {cleaned_str}")
                 return None
             
-            return json_match
-            
-        except json.JSONDecodeError as e:
-            logger.error(f"JSON 解析失败: {e}")
-            return None
         except Exception as e:
             logger.error(f"验证码识别失败: {e}", exc_info=True)
             return None
