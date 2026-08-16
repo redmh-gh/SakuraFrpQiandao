@@ -126,11 +126,11 @@ schedule:
 
 支持任何兼容 OpenAI API 的多模态模型：
 
-- OpenAI: `gpt-4o`
 - 阿里通义: `qwen-vl-plus`, `qwen-vl-max`
 - 智谱 AI: `glm-4v`
 - GitHub Copilot: 可通过第三方 OpenAI 兼容适配层接入
-- ModelScope: 各种开源视觉模型
+- ~~ModelScope: 各种开源视觉模型~~，鉴于魔搭社区在2026/8/6改为魔粒机制，需要每天登录才能获取魔粒使用模型，现已不推荐魔搭社区。
+- 可以使用智谱官网的免费视觉模型`GLM-4.6V-Flash`，但有时候高峰期会429，推荐使用`GLM-4.1V-Thinking-Flash`,效果差不多。
 
 ## 故障排查
 
